@@ -6,7 +6,7 @@ Quantum Werewolf is a game based on the party game "The Werewolves of Millers Ho
 
 
 
-This Version is a heavily modified and updated Version of one published by Jesse Straat (https://github.com/JesseStraat/Quantum-Werewolf)
+This Version is a heavily modified and updated version of one published by Jesse Straat (https://github.com/JesseStraat/Quantum-Werewolf)
 
 
 
