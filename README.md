@@ -1,4 +1,4 @@
-\# Quantum Werewolf
+# Quantum Werewolf
 
 
 
@@ -16,11 +16,11 @@ Currently there is no installation or update option implemented, though this Git
 
 
 
-\## About
+## About
 
 
 
-\### What is "The Werewolves of Millers Hollow"?
+### What is "The Werewolves of Millers Hollow"?
 
 
 
@@ -38,7 +38,7 @@ When only one faction is left, they win.
 
 
 
-\### What is the quantum twist?
+### What is the quantum twist?
 
 
 
@@ -52,11 +52,11 @@ Currently, there are three ways of measuring the superposition:
 
 
 
-1\. A player uses his Seer action to look at someone else's role, partially collapsing the superposition (and introducing entanglement) by removing all possibilities in which the player is the Seer and the viewed person is a different role to the one opserved;
+1. A player uses his Seer action to look at someone else's role, partially collapsing the superposition (and introducing entanglement) by removing all possibilities in which the player is the Seer and the viewed person is a different role to the one opserved;
 
-2\. There is an option to enable 'werewolfs can't eat other werewolfs', in this case choosing a victim as a werewolf removes all possibilities of both persons beeing werewolfs simultaneously;
+2. There is an option to enable 'werewolfs can't eat other werewolfs', in this case choosing a victim as a werewolf removes all possibilities of both persons beeing werewolfs simultaneously;
 
-3\. A player dies, which reveals his role to all players, collapsing the superposition quite a bit.
+3. A player dies, which reveals his role to all players, collapsing the superposition quite a bit.
 
 
 
@@ -64,13 +64,9 @@ Since there is no way of knowing the final gamestate (in fact, your actions infl
 
 
 
-\## What are the rules?
+## What are the rules?
 
-
-
-\### Game setup
-
-
+### Game setup
 
 When you start a game of quantum werewolf, you are first prompted to enter the names of all participating players.
 
@@ -92,7 +88,7 @@ A game of quantum werewolf needs at least 1 werewolf, optional roles are:
 
 
 
-\### Night phase
+### Night phase
 
 
 
@@ -112,7 +108,7 @@ Furthermore after the first round and if cupid is in the game, you will also be 
 
 
 
-\### Day phase
+### Day phase
 
 
 
@@ -134,7 +130,7 @@ You should decide beforehand on the format of this discussion and how the lynch 
 
 
 
-\## References
+## References
 
 
 
