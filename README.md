@@ -53,9 +53,7 @@ Currently, there are three ways of measuring the superposition:
 
 
 1. A player uses his Seer action to look at someone else's role, partially collapsing the superposition (and introducing entanglement) by removing all possibilities in which the player is the Seer and the viewed person is a different role to the one opserved;
-
 2. There is an option to enable 'werewolfs can't eat other werewolfs', in this case choosing a victim as a werewolf removes all possibilities of both persons beeing werewolfs simultaneously;
-
 3. A player dies, which reveals his role to all players, collapsing the superposition quite a bit.
 
 
@@ -127,6 +125,16 @@ All players that are still alive must now discuss whoever they will lynch.
 This discussion is separate from the interface of the game.
 
 You should decide beforehand on the format of this discussion and how the lynch target will be decided.
+
+
+
+
+
+## Updates
+
+
+
+02.08.2026 UI Updates making Seer-answers and list positions more visible, doubling the potential size of propability-bars and making sure roles with an existing propability are always shown with at least one symbol.
 
 
 

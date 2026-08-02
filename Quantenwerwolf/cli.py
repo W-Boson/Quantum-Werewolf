@@ -53,14 +53,17 @@ class CliGame:
         self.game = Game()
         self.logger = self.game.logger
         columns = get_terminal_size().columns
-        if columns < 69:
-            if columns < 45:
-                print(f"{self.boldred}WARNING: screen is too narrow for the game{self.normal}")
-                self.bar_length = 12
+        if columns < 100:
+            if columns < 69:
+                if columns < 45:
+                    print(f"{self.boldred}WARNING: screen is too narrow for the game{self.normal}")
+                    self.bar_length = 12
+                else:
+                    self.bar_length = columns - 27
             else:
-                self.bar_length = columns - 27
+                self.bar_length = 36
         else:
-            self.bar_length = 36
+            self.bar_length = 72
 
     def ask_yesno(self, query, yes, no):
         self.logger.debug(f'running ask_yesno({query}, {yes}, {no})')
@@ -140,6 +143,13 @@ class CliGame:
                 total_chance += chance
                 total_length_new = round(total_chance * self.bar_length)
                 length = total_length_new - total_length
+                
+                if length <= 0:
+                    length = 0
+                    if chance > 0:
+                        length = 1
+                        total_length_new = total_length_new + 1
+                    
                 total_length = total_length_new
                 line += f"{self.role_style_bold[role]}{letter * length}"
             line += f"{self.normal}{100*p['dead']:5.0f}% dead"
@@ -310,7 +320,7 @@ class CliGame:
             target = self.ask_player(f'\n  {self.boldpink}[SEER]{self.normal} Whose role do you inspect?\n    ')
             target_role = self.game.seer(player, target, project=False)
             player_actions['seer'] = (target, target_role)
-            print(f'  {self.boldpink}[SEER]{self.normal} You see that {target} is {self.role_preposition[target_role]}{target_role}.')
+            print(f'  {self.boldpink}[SEER]{self.normal} You see that {target} is {self.role_preposition[target_role]}{self.role_style_bold[target_role]}{target_role}.')
 
         # werewolf
         if 'werewolf' in self.game.used_roles and player_role_probabilities['werewolf'] != 0:
@@ -384,9 +394,12 @@ def cli():
             table_label = g.table_label(player_id)
             input(f"{player}'s turn (press ENTER to continue)")
             system('clear')
-            print(f"{player}'s turn; you are {table_label} in the list\n")
-
+            
+            print(f"{player}'s turn\n")
+            
             g.print_live_players()
+            
+            print(f"\n {g.red}!!! You are {table_label} in the list !!!\n")
 
             g.print_player_role(player_role_probabilities)
 
