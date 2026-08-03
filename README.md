@@ -138,6 +138,10 @@ You should decide beforehand on the format of this discussion and how the lynch 
 
 
 
+03.08.2026 Quality-of-Live fixes; Coloured death-messages, fixed problem with coloured Text whenever seer was last night Option, added ENTER Inputs for roles with 0 propability, added day / night counter in UI.
+
+
+
 ## References
 
 

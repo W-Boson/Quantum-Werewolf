@@ -124,7 +124,8 @@ class CliGame:
         probabilities = self.game.role_probabilities()
 
         # print header
-        print(f"{self.bold}{'ID':>3} {'Name':>{self.name_length}} {'Role Distribution':<{self.bar_length}}{'Deadness':>11}{self.normal}")
+        print(f"\n{self.bold}Day {self.game.turn_counter}{self.normal}\n")
+        print(f"\n{self.bold}{'ID':>3} {'Name':>{self.name_length}} {'Role Distribution':<{self.bar_length}}{'Deadness':>11}{self.normal}")
 
         # print bars
         for i in self.game.print_permutation:
@@ -164,14 +165,14 @@ class CliGame:
     def print_kill(self, player, cause=''):
         player_role = self.game.kill(player)
         print(f'\n  {player} was killed {cause}')
-        print(f'    {player} was {self.role_preposition[player_role]}{player_role}\n')
+        print(f'    {player} was {self.role_preposition[player_role]}{self.role_style_bold[player_role]}{player_role}{self.normal}\n')
         return player_role
 
     
     def print_death_log(self, death_log):
         for player, role, cause in death_log:
             print(f'\n  {player} was killed {cause}')
-            print(f'    {player} was {self.role_preposition[role]}{role}\n')
+            print(f'    {player} was {self.role_preposition[role]}{self.role_style_bold[role]}{role}{self.normal}\n')
 
 
     def resolve_hunter(self, pending_hunter):
@@ -316,30 +317,39 @@ class CliGame:
                         print(f'    {name:>{self.name_length}}: {100*chance:3.0f}% {self.boldblue}{"L" * length}{self.normal}')
 
         # seer
-        if 'seer' in self.game.used_roles and player_role_probabilities['seer'] != 0:
-            target = self.ask_player(f'\n  {self.boldpink}[SEER]{self.normal} Whose role do you inspect?\n    ')
-            target_role = self.game.seer(player, target, project=False)
-            player_actions['seer'] = (target, target_role)
-            print(f'  {self.boldpink}[SEER]{self.normal} You see that {target} is {self.role_preposition[target_role]}{self.role_style_bold[target_role]}{target_role}.')
+        if 'seer' in self.game.used_roles:
+            if player_role_probabilities['seer'] != 0:
+                target = self.ask_player(f'\n  {self.boldpink}[SEER]{self.normal} Whose role do you inspect?\n    ')
+                target_role = self.game.seer(player, target, project=False)
+                player_actions['seer'] = (target, target_role)
+                print(f'  {self.boldpink}[SEER]{self.normal} You see that {target} is {self.role_preposition[target_role]}{self.role_style_bold[target_role]}{target_role}{self.normal}\n')
+            else:
+                input(f'\n {self.boldpink}[SEER]{self.normal} Press ENTER to continue.\n ')
+            
 
         # werewolf
-        if 'werewolf' in self.game.used_roles and player_role_probabilities['werewolf'] != 0:
-            invalid_players = [player]
-            # print other werewolves
-            print(f'\n  {self.boldred}[WEREWOLF]{self.normal} Your fellow werewolves are:')
-            for p in player_other_werewolves:
-                name = p['name']
-                chance = p['werewolf']
-                if name != player:
-                    length = round(chance * self.bar_length)
-                    print(f'    {name:>{self.name_length}}: {100*chance:3.0f}% {self.boldred}{"W"*length}{self.normal}')
-                if chance == 1 and name != player and name in self.game.living_players():
-                    invalid_players.append(name)
+        
+        if 'werewolf' in self.game.used_roles:
+            if player_role_probabilities['werewolf'] != 0:
+                invalid_players = [player]    
+                # print other werewolves
+                print(f'\n {self.boldred}[WEREWOLF]{self.normal} Your fellow werewolves are:')
+                for p in player_other_werewolves:
+                    name = p['name']
+                    chance = p['werewolf']
+                    if name != player:
+                        length = round(chance * self.bar_length)
+                        print(f' {name:>{self.name_length}}: {100*chance:3.0f}% {self.boldred}{"W"*length}{self.normal}')
+                    if chance == 1 and name != player and name in self.game.living_players():
+                        invalid_players.append(name)
 
-            if self.game.living_players() != invalid_players:
-                # do werewolf action
-                target = self.ask_player(f'\n  {self.boldred}[WEREWOLF]{self.normal} Who do you attack?\n    ', invalid_players=invalid_players)
-                player_actions['werewolf'] = (target)
+                if self.game.living_players() != invalid_players:
+                    target = self.ask_player(f'\n {self.boldred}[WEREWOLF]{self.normal} Who do you attack?\n ', invalid_players=invalid_players)
+                    player_actions['werewolf'] = target
+                else:
+                    input(f'\n {self.boldred}[WEREWOLF]{self.normal} Press ENTER to continue.\n ')
+            else:
+                input(f'\n {self.boldred}[WEREWOLF]{self.normal} Press ENTER to continue.\n ')
 
         return player_actions
 
@@ -395,7 +405,7 @@ def cli():
             input(f"{player}'s turn (press ENTER to continue)")
             system('clear')
             
-            print(f"{player}'s turn\n")
+            print(f"{player}'s turn. It's night {g.game.turn_counter}{g.normal}\n")
             
             g.print_live_players()
             
