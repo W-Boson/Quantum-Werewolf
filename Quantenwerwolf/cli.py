@@ -23,6 +23,8 @@ class CliGame:
     boldgreen = '\033[1;32m'
     blue = '\033[0;34m'
     boldblue = '\033[1;34m'
+    orange = '\033[38;5;208m'
+    boldorange = '\033[1;38;5;208m'
 
     role_style = {
         'villager': yellow,
@@ -30,6 +32,7 @@ class CliGame:
         'seer': pink,
         'hunter': green,
         'cupid': blue,
+        'witch': orange
         }
 
     role_style_bold = {
@@ -38,6 +41,7 @@ class CliGame:
         'seer': boldpink,
         'hunter': boldgreen,
         'cupid': boldblue,
+        'witch': boldorange
         }
 
     role_preposition = {
@@ -46,6 +50,7 @@ class CliGame:
         'seer': 'the ',
         'hunter': 'the ',
         'cupid': '',
+        'witch': 'the '
         }
 
     name_length = 12
@@ -107,6 +112,33 @@ class CliGame:
                 print("      {}".format(p))
 
             return self.ask_player(query, invalid_players=invalid_players)
+
+    def ask_player_from_list(self, query, valid_players):
+        """
+        Ask the user to choose one player from a restricted list.
+        """
+        answer = input(query + 'Name: ')
+
+        if answer.isdecimal():
+            player_id = int(answer) - 1
+
+            if player_id in range(self.game.player_count):
+                answer = self.game.players[player_id]
+
+        if answer in valid_players:
+            return answer
+
+        print(
+        f' {self.red}"{answer}" is not a valid choice'
+        f'{self.normal}'
+        )
+
+        print(' Valid choices are:')
+        for player in valid_players:
+            print(f' - {player}')
+
+        return self.ask_player_from_list(query,valid_players)
+
 
     def ask_number(self, query, valid_numbers=None):
         answer = input(query)
@@ -351,7 +383,90 @@ class CliGame:
             else:
                 input(f'\n {self.boldred}[WEREWOLF]{self.normal} Press ENTER to continue.\n ')
 
+        #witch
+        if 'witch' in self.game.used_roles:
+            witch_id = self.game.player_ids[player]
+
+            if (player_role_probabilities['witch'] != 0 and not self.game.witch_used[witch_id]):
+                use_witch = self.ask_yesno(f'\n {self.boldorange}[WITCH]{self.normal} ''Do you want to use your ability?', yes=True, no=False)
+                if use_witch:
+                    self.resolve_witch_turn(player)
+            else:
+                input(f'\n {self.boldorange}[WITCH]{self.normal} ''Press ENTER to continue.\n ')
+
         return player_actions
+
+    
+    def resolve_witch_turn(self, witch):
+        witch_id = self.game.player_ids[witch]
+
+        if self.game.witch_used[witch_id]:
+            return
+
+        witch_result = self.game.choose_witch_world(witch)
+
+        if witch_result is None:
+            return
+
+        witch_worlds, measured_werewolves = (witch_result)
+
+        world_information = (self.game.witch_world_information(witch_worlds))
+
+        for person in world_information:
+            role = person['role']
+            style = self.role_style_bold.get(role, self.normal)
+
+            print(f" {person['name']:>{self.name_length}}: "f"{style}{role}{self.normal}")
+
+        attack_counts = self.game.attack_counts_in_world(measured_werewolves)
+
+        print(f'\n {self.boldorange}[WITCH]{self.normal} ''Werewolf attacks known so far:')
+
+        attacked_players = [self.game.players[i] for i, count in enumerate(attack_counts)if count > 0]
+
+        if not attacked_players:
+            print(' - nobody')            
+        else:
+            for i, player in enumerate(self.game.players):
+                count = attack_counts[i]
+                if count > 0:
+                    suffix = 'attack' if count == 1 else 'attacks'
+                    print(f' - {player}: {count} {suffix}')
+
+        print(f'\n {self.boldorange}[WITCH]{self.normal} ''Choose your action:')
+        print(' 1 = save an attacked player')
+        print(' 2 = kill a werewolf')
+        print(' 3 = do nothing')
+
+        action = self.ask_number(' Action: ')
+        if action == 1:
+            if not attacked_players:
+                print('\n There is nobody to save.')
+            else:
+                target = self.ask_player_from_list('\nWho do you save?\n ', attacked_players)
+                self.game.witch_save(target, measured_werewolves)
+                print(f'\n You saved {target}.')
+
+        elif action == 2:
+            possible_werewolves = [person['name'] for person in world_information if person['role'] == 'werewolf'
+            and person['name'] in self.game.living_players() and person['name'] != witch]
+
+            if not possible_werewolves:
+                print('\n There is no living werewolf in this world.')
+            else:
+                target = self.ask_player_from_list('\nWho do you kill?\n ', possible_werewolves)
+                self.game.witch_kill(witch, target)
+                print(f' You placed a witch curse on {target}. ''Its effect will be resolved through probability.')
+
+        elif action == 3:
+            print('\n You did nothing.')
+
+        else:
+            print('\n Invalid choice. The witch ability is still used.')
+    
+    
+    
+
 
     def print_player_role(self, player_probabilities):
         # display game and player info (role superposition)

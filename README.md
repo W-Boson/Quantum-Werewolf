@@ -84,6 +84,8 @@ A game of quantum werewolf needs at least 1 werewolf, optional roles are:
 
 &#x20;\* Hunter: Whenever the hunter dies, they may choose to kill another player.
 
+&#x20;\* Witch: The Witch posesses a one time ability, wich can be chosen in any night as long as the role is possible. A definite distribution of werewolfs is chosen for all witch-worlds of this player; the witch gets shown all definite player-roles in her witch-worlds and all active attacks of these werewolfs. The witch can then choose to remove all attacks on one person from the shown werewolfs or kill one of the werewolfs in her witch-worlds.
+
 
 
 ### Night phase
@@ -139,6 +141,11 @@ You should decide beforehand on the format of this discussion and how the lynch 
 
 
 03.08.2026 Quality-of-Live fixes; Coloured death-messages, fixed problem with coloured Text whenever seer was last night Option, added ENTER Inputs for roles with 0 propability, added day / night counter in UI.
+
+
+
+19.08.2026 Paradoxes with "Werewolfs can't eat Werewolfs" in wich all possible Werewolfs eat each other at the same time solved; In this case the Village wins ("The Werewolfs have eaten each other"). Added a new role:
+The **Witch** posesses a one time ability, that gives tremendous information and power in all her Worlds.
 
 
 

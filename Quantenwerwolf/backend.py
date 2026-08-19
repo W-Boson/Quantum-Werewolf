@@ -14,6 +14,7 @@ class Player:
         self.index = index
         self.name = name
         self.killed = False
+        self.witch_used = [False] * self.player_count
         self.logger = logging.getLogger(__name__)
         # can put lover list here
 
@@ -24,6 +25,7 @@ class Game:
     default_deck = {
             'werewolf': 2,
             'seer': 1,
+            'witch': 0,
             'hunter': 0,
             'cupid': 0,
             }
@@ -36,6 +38,9 @@ class Game:
         # optional rules
         self.werewolf_cannot_eat_werewolf = True
         self.start_with_subset = False
+        self.witch_used = []
+        self.witch_kills = []
+        self.death_causes = {}
 
     @property
     def player_count(self):
@@ -215,7 +220,12 @@ class Game:
         self.deaths = []
         for i in range(self.player_count):
             self.deaths += [[0] * self.player_count]
+        self.witch_kills = []
+        for i in range(self.player_count):
+            self.witch_kills += [[0] * self.player_count]
         self.killed = [False] * self.player_count
+        self.witch_used = [False] * self.player_count     
+        self.death_causes = {}
 
         # create list of cupid lovers
         self.logger.info('Initializing cupids lovers list')
@@ -237,11 +247,14 @@ class Game:
         # Free game state objects created in start()
         self.permutations = {}
         self.deaths = []
+        self.witch_kills = []
         self.killed = []
         self.player_ids = {}
         self.lovers_list = {}
         self.print_permutation = []
         self.used_roles = []
+        self.witch_used = []
+        self.death_causes = {}
         self.werewolf_count = 0
         self.turn_counter = 0
         
@@ -277,8 +290,13 @@ class Game:
         return [
             player
             for player_id, player in enumerate(self.players)
-            if self.killed[player_id] == 0 and p_dead_list[player_id] >= 1
-            ]
+            if (
+                not self.killed[player_id]
+                and (
+                    p_dead_list[player_id] >= 1
+                    or player_id in self.death_causes
+                ))]
+        
 
 
     @started()
@@ -338,7 +356,15 @@ class Game:
                 if self.killed[i]:
                     continue  # bereits tot, bleibt 1.0
 
-                attack = werewolf_attack[i]
+                witch_attack = 0.0
+
+                for witch_id in range(self.player_count):
+                    if p[witch_id] == 'witch':
+                        witch_attack += self.witch_kills[i][witch_id]
+
+                witch_attack = min(witch_attack, 1.0)   
+
+                attack = max(werewolf_attack[i],witch_attack)
 
                 # Liebhaber-Logik: stirbt, wenn Liebhaber stirbt
                 lover_id = None
@@ -457,10 +483,15 @@ class Game:
             for role, args in player_actions.items():
                 if role == 'cupid':
                     self.cupid(player, *args)
+                    
                 elif role == 'seer':
                     self.seer(player, *args)
+
                 elif role == 'werewolf':
                     self.werewolf(player, args)
+
+                elif role == 'witch':
+                    continue
 
     # ROLE ACTIONS
 
@@ -532,13 +563,234 @@ class Game:
 
         self.deaths[target_id][werewolf_id] = 1
 
-        if self.werewolf_cannot_eat_werewolf:
-            # project such that target and werewolf can't be both werewolves
-            p_list = self.valid_permutations()
-            for p in p_list:
-                if p[werewolf_id] == 'werewolf' and p[target_id] == 'werewolf':
-                    self.permutations[p] = False
+        if not self.werewolf_cannot_eat_werewolf:
+            return True
 
+        previous_permutations = self.permutations.copy()
+
+        for world in self.valid_permutations():
+            if world[werewolf_id] == 'werewolf' and world[target_id] == 'werewolf':
+                self.permutations[world] = False
+
+        if self.valid_permutations():
+            return True
+
+        self.permutations = previous_permutations
+
+        possible_werewolf_ids = set()
+        for world in self.valid_permutations():
+            for player_id, role in enumerate(world):
+                if role == 'werewolf':
+                    possible_werewolf_ids.add(player_id)
+
+        for player_id in possible_werewolf_ids:
+            if not self.killed[player_id]:
+                self.death_causes[player_id] = ('because the werewolves ate themselves')
+        self.logger.warning("The werewolves have eaten themselves.")
+
+        return False
+    
+    
+    @started()
+    def choose_witch_world(self, witch):
+        """
+        Randomly choose a possible werewolf combination from worlds
+        in which the player is the witch.
+        
+        Worlds in which the player is not the witch remain valid.
+        Within witch-worlds, worlds are removed if one of the
+        measured players is not a werewolf.
+        """
+        witch_id = self._id(witch)
+        valid_worlds = self.valid_permutations()
+        
+        possible_combinations = set()
+        
+        for world in valid_worlds:
+            if world[witch_id] != 'witch':
+                continue
+
+            werewolves = tuple(
+                self.players[player_id]
+                for player_id, role in enumerate(world)
+                if role == 'werewolf'
+                )
+
+            possible_combinations.add(werewolves)
+
+        if not possible_combinations:
+            return None
+
+        measured_werewolves = choice(
+            list(possible_combinations)
+            )
+
+        measured_werewolf_ids = {
+            self._id(player)
+            for player in measured_werewolves
+            }
+        
+        witch_worlds = []
+
+        for world in valid_worlds:
+            # Welten, in denen die Person nicht Hexe ist,
+            # bleiben immer erhalten.
+            if world[witch_id] != 'witch':
+                continue
+
+            # Nur Hexen-Welten entfernen, in denen mindestens
+            # ein gemessener Werwolf kein Werwolf ist.
+            if any(
+                    world[player_id] != 'werewolf'
+                    for player_id in measured_werewolf_ids
+                    ):
+                self.permutations[world] = False
+                continue
+            
+            witch_worlds.append(world)
+
+        remaining_worlds = tuple(
+            world
+            for world in valid_worlds
+            if self.permutations[world]
+            )
+
+        self.witch_used[witch_id] = True
+
+        self.logger.info(
+            f"Witch measured werewolves: "
+            f"{measured_werewolves}"
+            )
+
+        self.logger.info(
+            f"{len(remaining_worlds)} possible worlds remain."
+            )
+
+        return tuple(witch_worlds), measured_werewolves
+    
+    
+    
+    @started()
+    def witch_world_information(self, worlds):
+        """
+        Return role information shared by all selected worlds.
+        
+        A role is only shown as certain if it is identical
+        in every remaining selected world.
+        """
+        if not worlds:
+            return []
+
+        # Backward compatibility:
+        # Accept one world as well as multiple worlds.
+        if isinstance(worlds[0], str):
+            worlds = (worlds,)
+
+        information = []
+
+        for player_id, player in enumerate(self.players):
+            roles = {world[player_id] for world in worlds}
+
+            if len(roles) == 1:
+                role = next(iter(roles))
+            else:
+                role = 'good'
+
+            information.append({'name': player,'role': role,})
+
+        return information
+    
+    @started()
+    def possible_werewolf_combinations(self, witch):
+        """
+        Return all possible werewolf combinations in worlds
+        where the given player is the witch.
+        """
+        witch_id = self._id(witch)
+        combinations = set()
+
+        for world in self.valid_permutations():
+            if world[witch_id] != 'witch':
+                continue
+
+            werewolves = tuple(self.players[player_id] for player_id, role in enumerate(world) if role == 'werewolf')
+            combinations.add(werewolves)
+
+        return sorted(combinations)
+    
+    
+    @started()
+    def wolf_targets_in_world(self, world):
+        """
+        Return players attacked by at least one werewolf
+        in the selected world.
+        """
+        attack_counts = self.attack_counts_in_world(world)
+
+        return [player for player, count in attack_counts.items()
+        if count > 0]
+    
+    @started()
+    def witch_save(self, target, measured_werewolves):
+        """
+        Remove all recorded attacks by the measured werewolves
+        against the selected target.
+        """
+        target_id = self._id(target)
+        removed_attacks = 0
+
+        for werewolf in measured_werewolves:
+            werewolf_id = self._id(werewolf)
+
+            if self.deaths[target_id][werewolf_id]:
+                self.deaths[target_id][werewolf_id] = 0
+                removed_attacks += 1
+
+        self.logger.info(f"Witch saved {target} by removing " f"{removed_attacks} werewolf attacks.")
+
+        return removed_attacks
+            
+    @started()
+    def witch_kill(self, witch, target):
+        """
+        Store a possible witch kill.
+        
+        The kill only applies in worlds where the given player
+        is actually the witch.
+        """
+        witch_id = self._id(witch)
+        target_id = self._id(target)
+
+        if self.witch_used[witch_id] is False:
+            raise ValueError(f"{witch} must use the witch ability first.")
+
+        if self.killed[target_id]:  
+            raise ValueError(f"{target} is already dead.")
+
+        self.witch_kills[target_id][witch_id] = 1
+
+        self.logger.info(f"{witch} stored a possible witch kill against {target}.")
+
+        return target
+    
+    
+    def attack_counts_in_world(self, measured_werewolves):
+        counts = []
+        
+        measured_werewolf_ids = [
+        self._id(player)
+        for player in measured_werewolves
+    ]
+
+        for target_id in range(self.player_count):
+            count = 0
+            for werewolf_id in measured_werewolf_ids:
+                count += self.deaths[target_id][werewolf_id]
+            counts.append(count)
+
+        return counts
+        
+    
     @started()
     def kill(self, target: str) -> str:
         """Kill and identify a player. Return the player's role and collapses the game state.
@@ -613,8 +865,10 @@ class Game:
         pending_hunter = None
         
         for player in killed_players:
+            player_id = self._id(player)
+            player_cause = self.death_causes.pop(player_id, cause)
             role = self.kill(player)
-            death_log.append((player, role, cause))
+            death_log.append((player, role, player_cause))
             if role == 'hunter':
                 pending_hunter = player
 
@@ -631,9 +885,9 @@ class Game:
     @started()
     def start_day(self):
         killed_players = self.check_deaths()
-        return self.process_deaths(killed_players)
+        return self.process_deaths(killed_players,cause='by the werewolves')
 
 
     @started()
     def end_day(self, lynch_target, cause=''):
-        return self.process_deaths([lynch_target], cause=cause)
+        return self.process_deaths([lynch_target], cause='by the villagers')
