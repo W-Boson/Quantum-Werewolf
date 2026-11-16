@@ -14,6 +14,14 @@ Currently there is no installation or update option implemented, though this Git
 
 
 
+Start the game in PowerShell or a different fitting framework, enter the directory and start the game with 
+
+
+
+\*\*python start\_werewolf.py\*\* .
+
+
+
 
 
 ## About
